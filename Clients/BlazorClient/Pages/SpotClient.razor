@@ -1,0 +1,26 @@
+﻿@page "/SpotClient"
+@using CryptoExchange.Net.SharedApis
+@inject IEnumerable<ISpotTickerRestClient> restClients
+
+<h3>ETH-BTC prices:</h3>
+@foreach(var price in _prices.OrderBy(p => p.Key))
+{
+    <div>@price.Key: @price.Value</div>
+}
+
+@code{
+    private Dictionary<string, decimal?> _prices = new Dictionary<string, decimal?>();
+
+    protected override async Task OnInitializedAsync()
+    {
+        var symbol = new SharedSymbol(TradingMode.Spot, "ETH", "BTC");
+        var tasks = restClients.Select(x => x.GetSpotTickerAsync(new GetTickerRequest(symbol)));
+        await Task.WhenAll(tasks);
+        foreach (var ticker in tasks.Select(x => x.Result))
+        {
+            if (ticker.Success)
+                _prices.Add(ticker.Exchange, ticker.Data.LastPrice);
+        }
+    }
+
+}
